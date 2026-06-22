@@ -1,12 +1,13 @@
 import argparse
 
-from event_radar.dummy_data import get_dummy_events
 from event_radar.formatter import display_events
 from event_radar.models import Event
+from event_radar.scrapers.himatik_scraper import HimatikScraper
+from event_radar.scrapers.pnl_scraper import PNLScraper
 
 
 APP_NAME = "EventRadar"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -22,7 +23,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--source",
         choices=["pnl", "himatik", "all"],
         default="all",
-        help="Pilih sumber event yang ingin ditampilkan.",
+        help="Pilih sumber event.",
     )
 
     parser.add_argument(
@@ -47,39 +48,40 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def get_events(source: str) -> list[Event]:
+    if source == "pnl":
+        return PNLScraper().scrape()
+
+    if source == "himatik":
+        return HimatikScraper().scrape()
+
+    return [
+        *PNLScraper().scrape(),
+        *HimatikScraper().scrape(),
+    ]
+
+
 def filter_events(
     events: list[Event],
-    source: str,
     category: str,
 ) -> list[Event]:
-    filtered_events = events
+    if category == "all":
+        return events
 
-    if source != "all":
-        filtered_events = [
-            event
-            for event in filtered_events
-            if event.source.lower() == source.lower()
-        ]
-
-    if category != "all":
-        filtered_events = [
-            event
-            for event in filtered_events
-            if event.category.lower() == category.lower()
-        ]
-
-    return filtered_events
+    return [
+        event
+        for event in events
+        if event.category.lower() == category.lower()
+    ]
 
 
 def main() -> None:
     parser = create_parser()
     args = parser.parse_args()
 
-    events = get_dummy_events()
-
+    events = get_events(args.source)
     filtered_events = filter_events(
         events=events,
-        source=args.source,
         category=args.category,
     )
 
