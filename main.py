@@ -6,7 +6,7 @@ from event_radar.scrapers.factory import ScraperFactory
 
 
 APP_NAME = "EventRadar"
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.5.0"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -20,7 +20,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--source",
-        choices=["pnl", "himatik", "all"],
+        choices=["pnl", "dicoding", "all"],
         default="all",
         help="Pilih sumber event.",
     )
