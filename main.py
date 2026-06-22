@@ -6,7 +6,7 @@ from event_radar.scrapers.factory import ScraperFactory
 
 
 APP_NAME = "EventRadar"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -36,6 +36,13 @@ def create_parser() -> argparse.ArgumentParser:
         ],
         default="all",
         help="Filter event berdasarkan kategori.",
+    )
+
+    parser.add_argument(
+        "--search",
+        type=str,
+        default=None,
+        help="Cari event berdasarkan judul.",
     )
 
     parser.add_argument(
@@ -75,6 +82,22 @@ def filter_events(
     ]
 
 
+def search_events(
+    events: list[Event],
+    keyword: str | None,
+) -> list[Event]:
+    if not keyword:
+        return events
+
+    normalized_keyword = keyword.lower()
+
+    return [
+        event
+        for event in events
+        if normalized_keyword in event.title.lower()
+    ]
+
+
 def main() -> None:
     parser = create_parser()
     args = parser.parse_args()
@@ -87,11 +110,19 @@ def main() -> None:
             category=args.category,
         )
 
+        searched_events = search_events(
+            events=filtered_events,
+            keyword=args.search,
+        )
+
         print(f"=== {APP_NAME} ===")
         print(f"Sumber   : {args.source}")
         print(f"Kategori : {args.category}")
 
-        display_events(filtered_events)
+        if args.search:
+            print(f"Pencarian: {args.search}")
+
+        display_events(searched_events)
 
     except (ValueError, RuntimeError) as error:
         parser.error(str(error))
