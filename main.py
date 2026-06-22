@@ -2,12 +2,11 @@ import argparse
 
 from event_radar.formatter import display_events
 from event_radar.models import Event
-from event_radar.scrapers.himatik_scraper import HimatikScraper
-from event_radar.scrapers.pnl_scraper import PNLScraper
+from event_radar.scrapers.factory import ScraperFactory
 
 
 APP_NAME = "EventRadar"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -49,16 +48,17 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def get_events(source: str) -> list[Event]:
-    if source == "pnl":
-        return PNLScraper().scrape()
+    if source == "all":
+        events: list[Event] = []
 
-    if source == "himatik":
-        return HimatikScraper().scrape()
+        for scraper in ScraperFactory.create_all():
+            events.extend(scraper.scrape())
 
-    return [
-        *PNLScraper().scrape(),
-        *HimatikScraper().scrape(),
-    ]
+        return events
+
+    scraper = ScraperFactory.create(source)
+
+    return scraper.scrape()
 
 
 def filter_events(
@@ -79,17 +79,22 @@ def main() -> None:
     parser = create_parser()
     args = parser.parse_args()
 
-    events = get_events(args.source)
-    filtered_events = filter_events(
-        events=events,
-        category=args.category,
-    )
+    try:
+        events = get_events(args.source)
 
-    print(f"=== {APP_NAME} ===")
-    print(f"Sumber   : {args.source}")
-    print(f"Kategori : {args.category}")
+        filtered_events = filter_events(
+            events=events,
+            category=args.category,
+        )
 
-    display_events(filtered_events)
+        print(f"=== {APP_NAME} ===")
+        print(f"Sumber   : {args.source}")
+        print(f"Kategori : {args.category}")
+
+        display_events(filtered_events)
+
+    except (ValueError, RuntimeError) as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":
